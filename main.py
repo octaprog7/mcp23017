@@ -44,13 +44,26 @@ if __name__ == '__main__':
 
 if __name__ == '__main__':
     expander = mcp23017mod.MCP23017(adapter)
+    print(f"expander._bank: {expander._bank}")
+    """
+    print(32*"_")
+    for adr in range(0x16):
+        expander._write_reg(adr, 0x00)
+        v = expander._read_reg(adr)[0]
+        print("0", hex(adr), hex(v))
+        expander._write_reg(adr, 0xFF)
+        v = expander._read_reg(adr)[0]
+        print("1", hex(adr), hex(v))
+        print(8*"_")
+"""
+    sys.exit(0)
     # b = expander._read(0x10)
     # print(b)
     print(16 * "_")
-    ba, bb = expander._read_reg(0), expander._read_reg(1)
-    print(ba[0], bb[0])
-    v = expander._read_reg(0, 2)
-    print(f"v={v}, {v[0]}, {v[1]}")
+    # ba, bb = expander._read_reg(0), expander._read_reg(1)
+    # print(ba[0], bb[0])
+    # v = expander._read_reg(0, 2)
+    # print(f"v={v}, {v[0]}, {v[1]}")
     # b = expander._read(0x10)
     # print(b)
     print(16 * "_")
@@ -69,11 +82,11 @@ if __name__ == '__main__':
     
     for port in range(2):
         expander.active_port = port
-        print(f"qqq active_port: {expander.active_port}")
+        print(f"active_port: {expander.active_port}")
         expander.io_dir = 0xFF	# 8 bit as input
         expander.pull_up = 0xFF		# connect 8 pull up resistors
         expander.input_polarity = 0x00		# GPIO register bit reflects the same logic state of the input pin.
     
     while True:
         time.sleep_ms(500)
-        print(f"{expander.gpio:X}")
+        print(f"0x{expander.gpio:X}")

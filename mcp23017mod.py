@@ -15,13 +15,26 @@ class MCP23017(Device, Iterator):
         s0 = f"Invalid address value: 0x{address:x}!"
         check_value(address, range(0x20, 0x28), s0)
         super().__init__(adapter, address, big_byte_order=True)
-        self._bank = True  # то же самое, что и IOCON.BANK. После POR он в нуле! IOCON.BANK = 1
-        #
-        v = self._read_reg(0, 2)    # читаю два байта с последовательных адресов 0 и 1 в адресном пространстве MCP23017
-        if 0xFF == v[0] == v[1]:
-            self._bank = False  # IOCON.BANK = 0
+        # после POR IOCON.BANK = 0 всегда!
+        self._bank = self._get_addr_mode()  # то же самое, что и IOCON.BANK. После POR он в нуле!
         self._active_port = 0
         self._setup()
+
+    def _get_addr_mode(self) -> bool:
+        """Текущая адресация.
+        Возвращает True, когда адресация портов раздельная (2 порта по 8 бит, IOCON.BANK = 1).
+        Или False, когда адресация портов совместная (1 порт 16 бит, IOCON.BANK = 0)"""
+        addrs = (0x0A, 0x0B), (0x05, 0x15)      # адреса IOCON
+        lst = list()
+        for ta in addrs:
+            for a in ta:    # младший бит (бит 0) не доступен для записи в IOCON. Читается всегда, как 0!
+                self._write_reg(a, self._read_reg(a)[0] | 0x03)     # пишу в биты 0 и 1 единицу
+                lst.append(self._read_reg(a)[0] & 0x01)     # читаю два бита (0 и 1)
+        #
+        for i in (0, 2):
+            if 0 == lst[i] == lst[i+1]:
+                return i != 0       # если в младших битах нули, а я выше писал в них единицы, то это IOCON!
+        return False
 
     # def _read(self, count: int):
     #    return self.adapter.read(self.address, count)
@@ -50,30 +63,29 @@ class MCP23017(Device, Iterator):
     @hex_mode.setter
     def hex_mode(self, value: bool):
         """Устанавливает режим 16 или 8 бит I/O"""
-        if value:
-            self._bank = False
-            self.active_port = 0
-            # режим один порт(0) 16 bit
-            return
-        self._bank = True
         # режим два порта(0, 1) по 8 bit
-        self._setup_iocon(bank=self._bank, mirror=False, seqop=False)
+        # self._bank = True
+        if value:   # режим один порт(0) 16 bit
+            # self._bank = False
+            self.active_port = 0
+
+        self._setup_iocon(bank=not value, mirror=False, seqop=False)
 
     def _read_reg_by_index(self, index: int) -> int:
         """Чтение регистра по его индексу и текущему активному порту"""
-        addrs = self._get_reg_address(index)    #
+        addr = self._get_reg_address(index)[self.active_port]    #
         bytes_count = 2 if self.hex_mode else 1  # кол-во байт
-        res = self._read_reg(addrs[self.active_port], bytes_count)  # bytes
+        res = self._read_reg(addr, bytes_count)  # bytes
         fmt = "H" if self.hex_mode else "B"  # формат (H - unsigned short/B - unsigned byte)
-        print(f"DBG addrs: {addrs} bytes_count: {bytes_count} res: {res}")
+        # print(f"_read_reg: addr: 0x{addr:X}. index: {index}")
         return self.unpack(fmt, res)[0]
 
     def _write_reg_by_index(self, index: int, value: int):
         """Запись в регистр по его индексу и текущему активному порту"""
-        addrs = self._get_reg_address(index)  #
+        addr = self._get_reg_address(index)[self.active_port]  #
         bytes_count = 2 if self.hex_mode else 1  # кол-во байт
-        print(f"_write_reg: addrs: {addrs}. value: {value:X}")
-        self._write_reg(addrs[self.active_port], value, bytes_count)
+        # print(f"_write_reg: addr: 0x{addr:X}. value: {value:X}")
+        self._write_reg(addr, value, bytes_count)
 
     # PULL UP RESISTORS
     def get_pull_up(self) -> int:
@@ -257,8 +269,13 @@ class MCP23017(Device, Iterator):
         """Setup IOCON register.
         Биты  HAEN, ODR, INTPOL обнуляю всегда!"""
         val = (bank << 7) | (mirror << 6) | (seqop << 5) | (disslw << 4)
-        # self._write_reg(5, value=val)
-        self._write_reg_by_index(5, value=val)
+        if not self._bank and bank:		# переход из 0 -> 1 (плоская адресация -> раздельная адресация)
+            self._write_reg(0x0A, value=val)
+            self._write_reg(0x0B, value=val)
+        if not bank and self._bank:		# переход из 1 -> 0 (раздельная адресация -> плоская адресация)
+            self._write_reg(0x05, value=val)
+            self._write_reg(0x15, value=val)
+        self._bank = bank
 
     def _setup_interrupt(self):
         # запрещаю все, связанное с прерываниями!

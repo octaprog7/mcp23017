@@ -49,7 +49,7 @@ if __name__ == '__main__':
     for port in range(2):
         expander.active_port = port
         print(f"active_port: {expander.active_port}")
-        expander.io_dir = 0xFF	# 8 bit as input
+        expander.io_dir = 0xFF      # 8 bit as input
         expander.pull_up = 0xFF		# connect 8 pull up resistors
         expander.input_polarity = 0		# GPIO register bit reflects the same logic state of the input pin.
     

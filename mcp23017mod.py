@@ -271,10 +271,11 @@ class MCP23017(Device, Iterator):
         val = (bank << 7) | (mirror << 6) | (seqop << 5) | (disslw << 4)
         if not self._bank and bank:		# переход из 0 -> 1 (плоская адресация -> раздельная адресация)
             self._write_reg(0x0A, value=val)
-            self._write_reg(0x0B, value=val)
+            # self._write_reg(0x0A, value=(val << 8) | val, bytes_count=2)
+            # self._write_reg(0x0B, value=val)
         if not bank and self._bank:		# переход из 1 -> 0 (раздельная адресация -> плоская адресация)
             self._write_reg(0x05, value=val)
-            self._write_reg(0x15, value=val)
+            # self._write_reg(0x15, value=val)
         self._bank = bank
 
     def _setup_interrupt(self):

@@ -31,31 +31,30 @@ if __name__ == '__main__':
     expander = mcp23017mod.MCP23017(adapter)
     print(f"hex mode: {expander.hex_mode}")
     print(16 * "_")
-    # настройка всех выводов портов A/B на ввод
-    for port in range(2):
-        expander.active_port = port
-        print(f"active_port: {expander.active_port}")
-        expander.io_dir = 0xFF      # 8 bit as input
-        expander.pull_up = 0xFF		# connect 8 pull up resistors
-        expander.input_polarity = 0		# GPIO register bit reflects the same logic state of the input pin.
+    
+    # настройка всех выводов порта A на ввод
+    expander.active_port = 0
+    expander.io_dir = 0xFF      # 8 bit as input
+    expander.pull_up = 0xFF		# connect 8 pull up resistors
+    expander.input_polarity = 0		# GPIO register bit reflects the same logic state of the input pin.
     
     # вывод в консоль состояния порта expander.active_port. подключите к ним кнопки
     # между выводом порта и GND и смотрите, как меняется состояние битов! 
     cnt = 0
-    print(f"active_port: {expander.active_port}")
+    print(f"active_port: {expander.active_port} input test!")
     for pin_state in expander:
         time.sleep_ms(500)
         print(f"pin binary state: b{pin_state:b}")
         cnt += 1
-        if cnt > 30:
+        if cnt > 50:
             break
     
     expander.active_port = 1
-    print(f"active_port: {expander.active_port}")
+    expander.io_dir = 0x0      # 8 bit port A as output
+    print(f"active_port: {expander.active_port} output test!")
     # к выводам порта В подключите светодиод (анодом к выводу порта),
     # последовательно с сопротивлением 150 Oм.
     # настройка всех выводов порта B на ВЫвод!
-    expander.io_dir = 0x0      # 8 bit port A as output
     for i in range(1000):
         expander.gpio = 0xFF    # led ON	светодиод(ы) светят
         time.sleep_ms(500)		# пауза в 500 мс

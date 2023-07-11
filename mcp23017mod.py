@@ -36,9 +36,6 @@ class MCP23017(Device, Iterator):
                 return i != 0       # если в младших битах нули, а я выше писал в них единицы, то это IOCON!
         return False
 
-    # def _read(self, count: int):
-    #    return self.adapter.read(self.address, count)
-
     @property
     def active_port(self) -> int:
         """возвращает текущий порт, над которым производятся операции чтения и записи!"""
@@ -77,14 +74,12 @@ class MCP23017(Device, Iterator):
         bytes_count = 2 if self.hex_mode else 1  # кол-во байт
         res = self._read_reg(addr, bytes_count)  # bytes
         fmt = "H" if self.hex_mode else "B"  # формат (H - unsigned short/B - unsigned byte)
-        # print(f"_read_reg: addr: 0x{addr:X}. index: {index}")
         return self.unpack(fmt, res)[0]
 
     def _write_reg_by_index(self, index: int, value: int):
         """Запись в регистр по его индексу и текущему активному порту"""
         addr = self._get_reg_address(index)[self.active_port]  #
         bytes_count = 2 if self.hex_mode else 1  # кол-во байт
-        # print(f"_write_reg: addr: 0x{addr:X}. value: {value:X}")
         self._write_reg(addr, value, bytes_count)
 
     # PULL UP RESISTORS

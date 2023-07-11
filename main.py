@@ -1,4 +1,4 @@
-# micropython
+# MicroPython
 # mail: goctaprog@gmail.com
 # MIT license
 import time
@@ -7,18 +7,8 @@ from machine import I2C, Pin
 import mcp23017mod
 from sensor_pack.bus_service import I2cAdapter
 
-# Если в обработчике прерывания возникнет ошибка, MicroPython не сможет создать сообщение о ней!
-# Cоздаю специальный буфер для этой цели!
-# micropython.alloc_emergency_exception_buf(100)
-# interrupt counter, один байт
-# irq_cnt = bytearray(1)
-
-
-# def irq_handler(p: Pin):
-#    """Пожалуйста прочитай это: http://docs.micropython.org/en/latest/reference/isr_rules.html#isr-rules"""
-#    global irq_cnt
-#    irq_cnt[0] += 1
-
+# Пожалуйста, прочитайте документацию на MCP23017!
+# Please read the MCP23017 documentation!
 
 if __name__ == '__main__':
     # пожалуйста установите выводы scl и sda в конструкторе для вашей платы, иначе ничего не заработает!
@@ -34,7 +24,7 @@ if __name__ == '__main__':
 
     # i2c = I2C(id=1, scl=Pin(27), sda=Pin(26), freq=400_000)  # on Arduino Nano RP2040 Connect and Pico W tested!
     i2c = I2C(id=1, scl=Pin(7), sda=Pin(6), freq=400_000)  # create I2C peripheral at frequency of 400kHz
-    adapter = I2cAdapter(i2c)	# адаптер для стандартного доступа к шине
+    adapter = I2cAdapter(i2c)       # адаптер для стандартного доступа к шине
 
 
 if __name__ == '__main__':
@@ -55,7 +45,7 @@ if __name__ == '__main__':
     print(f"active_port: {expander.active_port}")
     for pin_state in expander:
         time.sleep_ms(500)
-        print(f"pin state: b{pin_state:b}")
+        print(f"pin binary state: b{pin_state:b}")
         cnt += 1
         if cnt > 30:
             break
@@ -67,8 +57,8 @@ if __name__ == '__main__':
     # настройка всех выводов порта B на ВЫвод!
     expander.io_dir = 0x0      # 8 bit port A as output
     for i in range(1000):
-        expander.gpio = 0xFF	# led ON	светодиод(ы) светят
+        expander.gpio = 0xFF    # led ON	светодиод(ы) светят
         time.sleep_ms(500)		# пауза в 500 мс
-        expander.gpio = 0x00	# led OFF	светодиод(ы) не светят
+        expander.gpio = 0x00    # led OFF	светодиод(ы) не светят
         time.sleep_ms(500)		# пауза в 500 мс
         

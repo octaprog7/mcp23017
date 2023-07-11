@@ -32,20 +32,16 @@ if __name__ == '__main__':
     # Replace id=1 with id=0 if you are using the first I2C port !!!
     # i2c = I2C(0, scl=Pin(13), sda=Pin(12), freq=400_000) # для примера
 
-    # функции irq_handler будет передаваться управление, когда один из выводов P0..P7, настроенных, как ВХОД,
-    # изменит состояние! Вы можете подключить к выводу GPIO21 провод и подключать его к GND,
-    # чтобы прерывание возникло!
-    # Не забудьте подключить вывод INT PCF8574 к выводу GPIO21 платы Arduino Nano RP2040 Connect with RP2040 !!!
-
-    # i2c = I2C(id=1, scl=Pin(27), sda=Pin(26), freq=400_000)  # on Arduino Nano RP2040 Connect tested
+    # i2c = I2C(id=1, scl=Pin(27), sda=Pin(26), freq=400_000)  # on Arduino Nano RP2040 Connect and Pico W tested!
     i2c = I2C(id=1, scl=Pin(7), sda=Pin(6), freq=400_000)  # create I2C peripheral at frequency of 400kHz
-    adapter = I2cAdapter(i2c)
+    adapter = I2cAdapter(i2c)	# адаптер для стандартного доступа к шине
 
 
 if __name__ == '__main__':
     expander = mcp23017mod.MCP23017(adapter)
+    print(f"hex mode: {expander.hex_mode}")
     print(16 * "_")
-
+    # настройка всех выводов портов A/B на ввод
     for port in range(2):
         expander.active_port = port
         print(f"active_port: {expander.active_port}")
@@ -53,12 +49,26 @@ if __name__ == '__main__':
         expander.pull_up = 0xFF		# connect 8 pull up resistors
         expander.input_polarity = 0		# GPIO register bit reflects the same logic state of the input pin.
     
-    print(f"hex mode: {expander.hex_mode}")
-    
-    # while True:
-    #    time.sleep_ms(500)
-    #    print(f"0x{expander.gpio:X}")
-    expander.hex_mode = True    
+    # вывод в консоль состояния порта expander.active_port. подключите к ним кнопки
+    # между выводом порта и GND и смотрите, как меняется состояние битов! 
+    cnt = 0
+    print(f"active_port: {expander.active_port}")
     for pin_state in expander:
         time.sleep_ms(500)
-        print(f"pin state: 0x{pin_state:X}")
+        print(f"pin state: b{pin_state:b}")
+        cnt += 1
+        if cnt > 30:
+            break
+    
+    expander.active_port = 1
+    print(f"active_port: {expander.active_port}")
+    # к выводам порта В подключите светодиод (анодом к выводу порта),
+    # последовательно с сопротивлением 150 Oм.
+    # настройка всех выводов порта B на ВЫвод!
+    expander.io_dir = 0x0      # 8 bit port A as output
+    for i in range(1000):
+        expander.gpio = 0xFF	# led ON	светодиод(ы) светят
+        time.sleep_ms(500)		# пауза в 500 мс
+        expander.gpio = 0x00	# led OFF	светодиод(ы) не светят
+        time.sleep_ms(500)		# пауза в 500 мс
+        
